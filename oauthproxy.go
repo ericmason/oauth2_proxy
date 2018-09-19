@@ -429,6 +429,13 @@ func (p *OAuthProxy) GetRedirect(req *http.Request) (redirect string, err error)
 	if redirect == "" || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
 		redirect = "/"
 	}
+	var scheme string
+	if req.TLS != nil || req.Header.Get("X-Scheme") == "https" {
+		scheme = "https"
+	} else {
+		scheme = "http"
+	}
+	redirect = fmt.Sprintf("%s://%s%s", scheme, req.Host, redirect)
 
 	return
 }
@@ -560,10 +567,6 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		log.Printf("%s csrf token mismatch, potential attack", remoteAddr)
 		p.ErrorPage(rw, 403, "Permission Denied", "csrf failed")
 		return
-	}
-
-	if !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
-		redirect = "/"
 	}
 
 	// set cookie, or deny
